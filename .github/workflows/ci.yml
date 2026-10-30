@@ -24,10 +24,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Godot
-        uses: firebelley/godot-export@v6.0.0
+        uses: barichello/godot-ci@v2
         with:
           godot-version: ${{ env.GODOT_VERSION }}
-          templates-version: ${{ env.GODOT_VERSION }}
 
       - name: Export Web
         run: |
@@ -56,10 +55,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Godot
-        uses: firebelley/godot-export@v6.0.0
+        uses: barichello/godot-ci@v2
         with:
           godot-version: ${{ env.GODOT_VERSION }}
-          templates-version: ${{ env.GODOT_VERSION }}
 
       - name: Export Android (debug keystore)
         run: |
