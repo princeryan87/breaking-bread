@@ -19,6 +19,8 @@ jobs:
     name: Export Web (HTML5)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      web_artifact: ${{ steps.upload-web.outputs.artifact_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,16 +54,12 @@ jobs:
           mkdir -v -p web
           godot --headless --export-release "Web" web/index.html
 
-      - name: Upload Web artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Web artifact for Pages
+        id: upload-web
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages
           path: web/
-          retention-days: 7
-
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
-        uses: actions/deploy-pages@v4
+          name: github-pages
 
   build-android:
     name: Export Android (APK)
@@ -108,12 +106,10 @@ jobs:
           retention-days: 30
 
   deploy-pages:
-    name: Configure GitHub Pages
+    name: Deploy to GitHub Pages
     needs: build-web
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
