@@ -19,7 +19,6 @@ var siren_active: bool = false
 
 @onready var body_mesh: MeshInstance3D = $PoliceBody
 @onready var light: OmniLight3D = $PoliceLight
-@onready var siren: AudioStreamPlayer = $../AudioManager/PoliceSiren
 
 func _ready() -> void:
 	GameManager.police_state_changed.connect(_on_police_state_changed)

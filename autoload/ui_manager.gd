@@ -82,7 +82,8 @@ func _on_heat_changed(amount: int) -> void:
 
 func _on_inventory_changed() -> void:
 	var text = "BAHAN:\n"
-	for item, count in GameManager.inventory:
+	for item in GameManager.inventory:
+		var count = GameManager.inventory[item]
 		var name = _get_item_name(item)
 		text += "%s: %d\n" % [name, count]
 	inventory_panel.get_node("Label").text = text
@@ -90,7 +91,8 @@ func _on_inventory_changed() -> void:
 func _on_baked_changed() -> void:
 	var text = "KUE SIAP JUAL:\n"
 	var total = 0
-	for good, count in GameManager.baked_goods:
+	for good in GameManager.baked_goods:
+		var count = GameManager.baked_goods[good]
 		if count > 0:
 			var name = _get_recipe_name(good)
 			text += "%s: %d\n" % [name, count]
@@ -239,7 +241,8 @@ func _craft_recipe(recipe_id: String) -> void:
 			reason.append("Oven Lv.%d" % recipe.oven_level_required)
 		if GameManager.reputation < recipe.min_reputation:
 			reason.append("Rep %d" % recipe.min_reputation)
-		for item, cost in recipe.cost:
+		for item in recipe.cost:
+			var cost = recipe.cost[item]
 			if GameManager.inventory[item] < cost:
 				reason.append("%s %d" % [_get_item_name(item), cost])
 		show_message("Tidak bisa buat: " + ", ".join(reason))

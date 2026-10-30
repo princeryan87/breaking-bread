@@ -37,7 +37,7 @@ func _create_ground() -> void:
 	# Ground collision
 	var collision = StaticBody3D.new()
 	var shape = CollisionShape3D.new()
-	shape.shape = BoxShape3D(size = Vector3(city_size * 2, 0.1, city_size * 2))
+	shape.shape = BoxShape3D.new(Vector3(city_size * 2, 0.1, city_size * 2))
 	collision.add_child(shape)
 	collision.global_position = Vector3(0, 0, 0)
 	add_child(collision)
@@ -95,7 +95,7 @@ func _create_building_block(origin: Vector3, rng: RandomNumberGenerator) -> void
 		# Collision
 		var collision = StaticBody3D.new()
 		var shape = CollisionShape3D.new()
-		shape.shape = BoxShape3D(size = Vector3(bw, bh, bd))
+		shape.shape = BoxShape3D.new(Vector3(bw, bh, bd))
 		collision.add_child(shape)
 		collision.global_position = building.global_position
 		add_child(collision)
@@ -127,7 +127,7 @@ func _create_wall(pos: Vector3, size: Vector3) -> void:
 
 	var collision = StaticBody3D.new()
 	var shape = CollisionShape3D.new()
-	shape.shape = BoxShape3D(size = size)
+	shape.shape = BoxShape3D.new(size)
 	collision.add_child(shape)
 	collision.global_position = pos
 	add_child(collision)

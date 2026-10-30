@@ -118,8 +118,8 @@ func remove_baked_good(good: String, amount: int) -> bool:
 
 func get_total_baked_goods() -> int:
 	var total = 0
-	for count in baked_goods.values():
-		total += count
+	for key in baked_goods:
+		total += baked_goods[key]
 	return total
 
 ## ===== RESEP =====
@@ -161,7 +161,8 @@ func can_craft(recipe_id: String) -> bool:
 		return false
 	if reputation < recipe.min_reputation:
 		return false
-	for item, cost in recipe.cost:
+	for item in recipe.cost:
+		var cost = recipe.cost[item]
 		if inventory[item] < cost:
 			return false
 	return true
@@ -171,7 +172,8 @@ func craft(recipe_id: String) -> bool:
 		return false
 
 	var recipe = RECIPES[recipe_id]
-	for item, cost in recipe.cost:
+	for item in recipe.cost:
+		var cost = recipe.cost[item]
 		remove_inventory(item, cost)
 
 	# Return baking time, actual output added when timer completes

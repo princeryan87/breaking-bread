@@ -14,12 +14,22 @@ var active_customers: Array[Node3D] = []
 var spawn_timers: Dictionary = {}
 var rng: RandomNumberGenerator
 
-@onready var customer_mat: StandardMaterial3D = preload("res://scenes/main.tscn").get_sub_resource("Material_customer")
-@onready var cone_mat: StandardMaterial3D = preload("res://scenes/main.tscn").get_sub_resource("Material_cone")
+## ===== MATERIALS (created in code) =====
+var customer_mat: StandardMaterial3D
+var cone_mat: StandardMaterial3D
 
 func _ready() -> void:
 	rng = RandomNumberGenerator.new()
 	rng.randomize()
+
+	# Create materials programmatically
+	customer_mat = StandardMaterial3D.new()
+	customer_mat.albedo_color = Color(1.0, 0.4, 0.4)
+	customer_mat.roughness = 0.8
+
+	cone_mat = StandardMaterial3D.new()
+	cone_mat.albedo_color = Color(1.0, 0.5, 0.0)
+	cone_mat.roughness = 0.8
 
 	# Create customer scene if not provided
 	if not customer_prefab:
@@ -47,12 +57,12 @@ func _create_customer_scene() -> PackedScene:
 	body.global_position = Vector3(0, 1.3, 0)
 	root.add_child(body)
 
-	# Cone indicator (above head)
+	# Cone indicator (above head) - use CapsuleMesh as cone substitute
 	var cone = MeshInstance3D.new()
 	cone.name = "SellIndicator"
-	cone.mesh = ConeMesh.new()
+	cone.mesh = CapsuleMesh.new()
 	cone.mesh.height = 1.5
-	cone.mesh.radius = 0.6
+	cone.mesh.radius = 0.5
 	cone.material_override = cone_mat
 	cone.global_position = Vector3(0, 3.0, 0)
 	cone.visible = false
@@ -130,7 +140,7 @@ func _spawn_customer() -> void:
 
 	# Find valid spawn position on road
 	var spawn_pos = _find_spawn_position(rv.global_position)
-	if not spawn_pos:
+	if spawn_pos == Vector3.ZERO:
 		return
 
 	var customer = customer_prefab.instantiate()
@@ -155,11 +165,11 @@ func _find_spawn_position(rv_pos: Vector3) -> Vector3:
 		if result and result.collider.is_in_group("ground"):
 			return result.position + Vector3.UP * 0.5
 
-	return null
+	return Vector3.ZERO
 
 func _on_customer_removed(customer: Node3D) -> void:
 	if customer in active_customers:
-		active_customers.remove(customer)
+		active_customers.erase(customer)
 		# Schedule respawn
 		var timer = Timer.new()
 		timer.wait_time = respawn_time

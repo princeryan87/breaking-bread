@@ -177,7 +177,7 @@ func _on_sell_body_entered(body: Node3D) -> void:
 
 func _on_sell_body_exited(body: Node3D) -> void:
 	if body in nearby_customers:
-		nearby_customers.remove(body)
+		nearby_customers.erase(body)
 		customer_out_of_range.emit(body)
 		body.show_sell_indicator(false)
 
@@ -186,7 +186,8 @@ func try_sell_to_customer(customer: Node3D) -> bool:
 		return false
 
 	# Find a baked good to sell
-	for good, count in GameManager.baked_goods:
+	for good in GameManager.baked_goods:
+		var count = GameManager.baked_goods[good]
 		if count > 0:
 			var price = GameManager.get_sell_price(good)
 			GameManager.remove_baked_good(good, 1)

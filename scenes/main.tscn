@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid://bkqjr8x7q9wsa]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/rv_controller.gd" id="1_0"]
 [ext_resource type="Script" path="res://scripts/city_generator.gd" id="2_0"]
@@ -27,23 +27,12 @@ roughness = 0.1
 transparency = 1
 transparency_mode = 1
 
-[sub_resource type="StandardMaterial3D" id="Material_customer"]
-albedo_color = Color(1.0, 0.4, 0.4)
-roughness = 0.8
-
 [sub_resource type="StandardMaterial3D" id="Material_police"]
 albedo_color = Color(0.1, 0.1, 0.6)
 roughness = 0.7
 
-[sub_resource type="StandardMaterial3D" id="Material_cone"]
-albedo_color = Color(1.0, 0.5, 0.0)
-roughness = 0.8
-
 [node name="Main" type="Node3D" groups=["main"]]
 physics_ticks_per_second = 60
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = ExtResource("5_0")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
@@ -128,10 +117,3 @@ omni_attenuation = 1.0
 shape = BoxShape3D(size = Vector3(2.0, 1.5, 4.0))
 
 [node name="CustomerSpawner" type="Node3D" parent="." script=ExtResource("4_0")]
-
-[node name="UIManager" type="CanvasLayer" parent="." instance=ExtResource("6_0")]
-layout_mode = 2
-
-[node name="AudioManager" type="Node" parent="." instance=ExtResource("7_0")]
-
-[node name="GameManager" type="Node" parent="." instance=ExtResource("8_0")]

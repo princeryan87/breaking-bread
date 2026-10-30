@@ -1,7 +1,5 @@
 extends Node
 
-class_name AudioManager
-
 ## ===== AUDIO PLAYERS =====
 @onready var music_player: AudioStreamPlayer = $MusicPlayer
 @onready var sfx_player: AudioStreamPlayer = $SfxPlayer

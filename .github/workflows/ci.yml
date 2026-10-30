@@ -41,8 +41,9 @@ jobs:
           # Download export templates
           wget -nv -O templates.tpz "$TEMPLATES_URL"
           unzip -q templates.tpz
-          mkdir -p templates/4.3.stable
-          mv templates/* templates/4.3.stable/ 2>/dev/null || true
+          # Godot expects templates at ~/.local/share/godot/export_templates/<version>/
+          mkdir -p export_templates/4.3.stable
+          mv templates/* export_templates/4.3.stable/ 2>/dev/null || true
 
           echo "~/.local/share/godot" >> $GITHUB_PATH
 
@@ -90,8 +91,9 @@ jobs:
           # Download export templates
           wget -nv -O templates.tpz "$TEMPLATES_URL"
           unzip -q templates.tpz
-          mkdir -p templates/4.3.stable
-          mv templates/* templates/4.3.stable/ 2>/dev/null || true
+          # Godot expects templates at ~/.local/share/godot/export_templates/<version>/
+          mkdir -p export_templates/4.3.stable
+          mv templates/* export_templates/4.3.stable/ 2>/dev/null || true
 
           echo "~/.local/share/godot" >> $GITHUB_PATH
 
