@@ -24,9 +24,27 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Godot
-        uses: barichello/godot-ci@v2
-        with:
-          godot-version: ${{ env.GODOT_VERSION }}
+        run: |
+          # Download Godot 4.3 Linux headless
+          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
+          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+
+          mkdir -p ~/.local/share/godot
+          cd ~/.local/share/godot
+
+          # Download Godot
+          wget -nv -O godot.zip "$GODOT_URL"
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+          # Download export templates
+          wget -nv -O templates.tpz "$TEMPLATES_URL"
+          unzip -q templates.tpz
+          mkdir -p templates/4.3.stable
+          mv templates/* templates/4.3.stable/ 2>/dev/null || true
+
+          echo "~/.local/share/godot" >> $GITHUB_PATH
 
       - name: Export Web
         run: |
@@ -55,9 +73,27 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Godot
-        uses: barichello/godot-ci@v2
-        with:
-          godot-version: ${{ env.GODOT_VERSION }}
+        run: |
+          # Download Godot 4.3 Linux headless
+          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
+          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+
+          mkdir -p ~/.local/share/godot
+          cd ~/.local/share/godot
+
+          # Download Godot
+          wget -nv -O godot.zip "$GODOT_URL"
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+
+          # Download export templates
+          wget -nv -O templates.tpz "$TEMPLATES_URL"
+          unzip -q templates.tpz
+          mkdir -p templates/4.3.stable
+          mv templates/* templates/4.3.stable/ 2>/dev/null || true
+
+          echo "~/.local/share/godot" >> $GITHUB_PATH
 
       - name: Export Android (debug keystore)
         run: |
