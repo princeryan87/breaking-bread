@@ -1,0 +1,85 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  GODOT_VERSION: "4.3"
+  PROJECT_PATH: "."
+
+jobs:
+  build-web:
+    name: Export Web (HTML5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: firebelley/godot-export@v6.1.0
+        with:
+          godot-version: ${{ env.GODOT_VERSION }}
+          templates-version: ${{ env.GODOT_VERSION }}
+
+      - name: Export Web
+        run: |
+          mkdir -v -p web
+          godot --headless --export-release "Web" web/index.html
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web/
+          retention-days: 7
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4
+        with:
+          path: web
+
+  build-android:
+    name: Export Android (APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: firebelley/godot-export@v6.1.0
+        with:
+          godot-version: ${{ env.GODOT_VERSION }}
+          templates-version: ${{ env.GODOT_VERSION }}
+
+      - name: Export Android (debug keystore)
+        run: |
+          mkdir -v -p builds
+          godot --headless --export-release "Android" builds/breaking_bread.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: builds/breaking_bread.apk
+          retention-days: 30
+
+  deploy-pages:
+    name: Configure GitHub Pages
+    needs: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
