@@ -1,7 +1,5 @@
 extends CanvasLayer
 
-class_name UIManager
-
 ## ===== NODE REFERENCES =====
 @onready var money_label: Label = $HUD/MoneyLabel
 @onready var rep_label: Label = $HUD/RepLabel
@@ -172,7 +170,7 @@ func _get_item_name(item: String) -> String:
 		"flour": return "Tepung"
 		"honey": return "Madu"
 		"chocolate": return "Cokelat"
-		default: return item
+		_: return item
 
 func _get_recipe_name(recipe_id: String) -> String:
 	return GameManager.RECIPES[recipe_id].name

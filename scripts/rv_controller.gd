@@ -15,7 +15,6 @@ class_name RVController
 @export var friction: float = 3.0
 
 ## ===== STATE =====
-var velocity: Vector3 = Vector3.ZERO
 var current_speed: float = 0.0
 var is_braking: bool = false
 var target_rotation: float = 0.0
@@ -54,6 +53,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if GameManager.is_paused:
 		velocity = Vector3.ZERO
+		move_and_slide()
 		return
 
 	_handle_input(delta)

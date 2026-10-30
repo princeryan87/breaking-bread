@@ -1,7 +1,5 @@
 extends Node
 
-class_name GameManager
-
 ## ===== STATE =====
 # Uang & Reputasi
 var money: int = 500
@@ -234,7 +232,8 @@ func upgrade_engine() -> bool:
 
 func get_max_speed() -> float:
 	# Base 15, level 2 = 20, level 3 = 28
-	return 15.0 + (engine_level - 1) * 5.0 + (engine_level == 3) * 3.0
+	var bonus = 3.0 if engine_level == 3 else 0.0
+	return 15.0 + (engine_level - 1) * 5.0 + bonus
 
 func get_acceleration() -> float:
 	return 8.0 + (engine_level - 1) * 3.0

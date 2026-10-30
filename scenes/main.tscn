@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/rv_controller.gd" id="1_0"]
 [ext_resource type="Script" path="res://scripts/city_generator.gd" id="2_0"]
@@ -31,6 +31,21 @@ transparency_mode = 1
 albedo_color = Color(0.1, 0.1, 0.6)
 roughness = 0.7
 
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="BoxShape3D" id="RVShape"]
+size = Vector3(2.5, 2.0, 5.0)
+
+[sub_resource type="BoxShape3D" id="KitchenAreaShape"]
+size = Vector3(2.0, 1.5, 2.0)
+
+[sub_resource type="BoxShape3D" id="SellAreaShape"]
+size = Vector3(1.0, 1.5, 1.5)
+
+[sub_resource type="BoxShape3D" id="PoliceShape"]
+size = Vector3(2.0, 1.5, 4.0)
+
 [node name="Main" type="Node3D" groups=["main"]]
 physics_ticks_per_second = 60
 
@@ -46,7 +61,7 @@ light_projector = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
-shape = BoxShape3D(size = Vector3(1000, 1, 1000))
+shape = SubResource("GroundShape")
 
 [node name="CityGenerator" type="Node3D" parent="." script=ExtResource("2_0")]
 
@@ -79,7 +94,7 @@ mesh = BoxMesh(size = Vector3(0.1, 1.2, 2.5))
 material_override = SubResource("Material_window")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RV"]
-shape = BoxShape3D(size = Vector3(2.5, 2.0, 5.0))
+shape = SubResource("RVShape")
 
 [node name="Camera3D" type="Camera3D" parent="RV"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 1.0)
@@ -90,13 +105,13 @@ near = 0.1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1.5)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RV/KitchenArea"]
-shape = BoxShape3D(size = Vector3(2.0, 1.5, 2.0))
+shape = SubResource("KitchenAreaShape")
 
 [node name="SellArea" type="Area3D" parent="RV"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, 0.0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RV/SellArea"]
-shape = BoxShape3D(size = Vector3(1.0, 1.5, 1.5))
+shape = SubResource("SellAreaShape")
 
 [node name="PoliceController" type="CharacterBody3D" parent="." script=ExtResource("3_0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 1, -50)
@@ -114,6 +129,6 @@ omni_range = 20.0
 omni_attenuation = 1.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PoliceController"]
-shape = BoxShape3D(size = Vector3(2.0, 1.5, 4.0))
+shape = SubResource("PoliceShape")
 
 [node name="CustomerSpawner" type="Node3D" parent="." script=ExtResource("4_0")]

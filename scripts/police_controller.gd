@@ -11,7 +11,6 @@ class_name PoliceController
 
 ## ===== STATE =====
 var target: Node3D = null
-var velocity: Vector3 = Vector3.ZERO
 var current_speed: float = 0.0
 var is_chasing: bool = false
 var lost_timer: float = 0.0
@@ -55,7 +54,7 @@ func _patrol(delta: float) -> void:
 	if _patrol_target:
 		var dir = (_patrol_target - global_position).normalized()
 		if global_position.distance_to(_patrol_target) < 5.0:
-			_patrol_target = null
+			_patrol_target = Vector3.ZERO
 		else:
 			_steer_towards(dir, base_speed * 0.5, delta)
 
@@ -115,7 +114,6 @@ func _stop_chase() -> void:
 	is_chasing = false
 	target = null
 	lost_timer = 0.0
-	GameManager.police_alert = false
 	GameManager.police_state_changed.emit(false, 0.0)
 
 func _on_catch_target() -> void:
@@ -123,5 +121,5 @@ func _on_catch_target() -> void:
 		target.on_caught_by_police()
 	_stop_chase()
 
-func get_position() -> Vector3:
+func get_police_position() -> Vector3:
 	return global_position

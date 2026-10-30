@@ -10,13 +10,27 @@ class_name CityGenerator
 @export var max_building_height: float = 25.0
 @export var road_width: float = 8.0
 
-## ===== MATERIALS =====
-@onready var road_mat: StandardMaterial3D = preload("res://scenes/main.tscn").get_sub_resource("Material_road")
-@onready var building_mat: StandardMaterial3D = preload("res://scenes/main.tscn").get_sub_resource("Material_building")
-@onready var ground_mat: StandardMaterial3D = preload("res://scenes/main.tscn").get_sub_resource("Material_ground")
+## ===== MATERIALS (created in code) =====
+var road_mat: StandardMaterial3D
+var building_mat: StandardMaterial3D
+var ground_mat: StandardMaterial3D
 
 func _ready() -> void:
+	_create_materials()
 	generate_city()
+
+func _create_materials() -> void:
+	road_mat = StandardMaterial3D.new()
+	road_mat.albedo_color = Color(0.2, 0.2, 0.2)
+	road_mat.roughness = 0.9
+
+	building_mat = StandardMaterial3D.new()
+	building_mat.albedo_color = Color(0.6, 0.55, 0.5)
+	building_mat.roughness = 0.8
+
+	ground_mat = StandardMaterial3D.new()
+	ground_mat.albedo_color = Color(0.35, 0.4, 0.3)
+	ground_mat.roughness = 0.9
 
 func generate_city() -> void:
 	_create_ground()
@@ -31,13 +45,15 @@ func _create_ground() -> void:
 	ground.mesh.subdivide_width = 10
 	ground.mesh.subdivide_depth = 10
 	ground.material_override = ground_mat
-	ground.transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+	ground.transform = Transform3D.IDENTITY.translated(Vector3(0, 0.01, 0))
 	add_child(ground)
 
 	# Ground collision
 	var collision = StaticBody3D.new()
 	var shape = CollisionShape3D.new()
-	shape.shape = BoxShape3D.new(Vector3(city_size * 2, 0.1, city_size * 2))
+	var box_shape = BoxShape3D.new()
+	box_shape.size = Vector3(city_size * 2, 0.1, city_size * 2)
+	shape.shape = box_shape
 	collision.add_child(shape)
 	collision.global_position = Vector3(0, 0, 0)
 	add_child(collision)
@@ -95,7 +111,9 @@ func _create_building_block(origin: Vector3, rng: RandomNumberGenerator) -> void
 		# Collision
 		var collision = StaticBody3D.new()
 		var shape = CollisionShape3D.new()
-		shape.shape = BoxShape3D.new(Vector3(bw, bh, bd))
+		var box_shape = BoxShape3D.new()
+		box_shape.size = Vector3(bw, bh, bd)
+		shape.shape = box_shape
 		collision.add_child(shape)
 		collision.global_position = building.global_position
 		add_child(collision)
@@ -127,7 +145,9 @@ func _create_wall(pos: Vector3, size: Vector3) -> void:
 
 	var collision = StaticBody3D.new()
 	var shape = CollisionShape3D.new()
-	shape.shape = BoxShape3D.new(size)
+	var box_shape = BoxShape3D.new()
+	box_shape.size = size
+	shape.shape = box_shape
 	collision.add_child(shape)
 	collision.global_position = pos
 	add_child(collision)
