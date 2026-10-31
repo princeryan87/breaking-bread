@@ -77,22 +77,31 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platform-tools" "build-tools;34.0.0" "platforms;android-34" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
 
-      - name: Pengaturan editor Godot
-        run: |
-          mkdir -p ~/.config/godot
-          cat > ~/.config/godot/editor_settings-${GODOT_VERSION}.tres <<SETTINGS
-          [gd_resource type="EditorSettings" format=3]
-
-          [resource]
-          export/android/android_sdk_path = "${ANDROID_HOME}"
-          export/android/java_sdk_path = "${JAVA_HOME}"
-          SETTINGS
-
       - name: Buat debug keystore
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android \
             -keystore $RUNNER_TEMP/debug.keystore -storepass android \
             -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+
+      - name: Pengaturan editor Godot
+        run: |
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.tres editor_settings-4.3.tres; do
+            {
+              echo '[gd_resource type="EditorSettings" format=3]'
+              echo
+              echo '[resource]'
+              echo "export/android/android_sdk_path = \"${ANDROID_HOME}\""
+              echo "export/android/java_sdk_path = \"${JAVA_HOME}\""
+              echo "export/android/debug_keystore = \"${RUNNER_TEMP}/debug.keystore\""
+              echo 'export/android/debug_keystore_user = "androiddebugkey"'
+              echo 'export/android/debug_keystore_pass = "android"'
+              echo 'export/android/shutdown_adb_on_exit = true'
+            } > ~/.config/godot/$f
+          done
+          cat ~/.config/godot/editor_settings-4.3.tres
+          ls "$ANDROID_HOME" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/platform-tools" || true
+          ls ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable | head -30
 
       - name: Import proyek
         run: godot --headless --path . --import || true
@@ -104,7 +113,7 @@ jobs:
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p build/android
-          godot --headless --path . --export-debug "Android" build/android/kue-gelap.apk
+          godot --headless --verbose --path . --export-debug "Android" build/android/kue-gelap.apk
 
       - uses: actions/upload-artifact@v4
         with:
