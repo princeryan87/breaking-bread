@@ -1,67 +1,95 @@
 extends Node
 
-## ===== STATE =====
-# Uang & Reputasi
-var money: int = 500
-var reputation: int = 0
-var heat: int = 0
+class_name GameManager
 
-# Persediaan bahan
-var inventory: Dictionary = {
-	"sugar": 0,      # gula selundupan
-	"flour": 0,      # tepung
-	"honey": 0,      # madu
-	"chocolate": 0,  # cokelat
-}
-
-# Produksi kue (siap jual)
-var baked_goods: Dictionary = {
-	"brownie": 0,
-	"karamel_layer": 0,
-	"dark_honey_tart": 0,
-}
-
-# Upgrade level
-var oven_level: int = 1
-var engine_level: int = 1
-
-# Resep yang terbuka
-var unlocked_recipes: Array[String] = ["brownie"]
-
-# Posisi RV & status
-var rv_position: Vector3 = Vector3.ZERO
-var is_driving: bool = false
-var is_paused: bool = false
-
-# Polisi
-var police_alert: bool = false
-var police_distance: float = 0.0
-var police_lost_timer: float = 0.0
-
-# Konstan
-const MAX_HEAT: int = 100
-const HEAT_PER_SALE: int = 10
-const POLICE_CHASE_THRESHOLD: int = 50
-const POLICE_LOST_DISTANCE: float = 110.0
-const POLICE_LOST_TIME: float = 4.0
-
-## ===== SIGNALS =====
 signal money_changed(new_amount: int)
 signal reputation_changed(new_amount: int)
-signal heat_changed(new_amount: int)
-signal inventory_changed()
-signal baked_goods_changed()
-signal upgrade_changed()
-signal police_state_changed(alert: bool, distance: float)
+signal heat_changed(new_amount: float)
+signal day_changed(new_day: int)
 signal game_over(reason: String)
 
-## ===== HELPERS =====
+## Game State
+var money: int = 500
+var reputation: int = 50
+var heat: float = 0.0
+var current_day: int = 1
+var max_heat: float = 100.0
+
+## RV State
+var rv_fuel: float = 100.0
+var rv_condition: float = 100.0
+var rv_max_fuel: float = 100.0
+
+## Inventory
+var ingredients: Dictionary = {
+	"flour": 10,
+	"sugar": 10,
+	"butter": 5,
+	"eggs": 12,
+	"chocolate": 5,
+	"fruit": 8
+}
+
+var baked_goods: Dictionary = {}
+
+## Upgrades
+var upgrades: Dictionary = {
+	"better_oven": false,
+	"fridge": false,
+	"solar_panel": false,
+	"bigger_tank": false,
+	"stealth_paint": false
+}
+
+var upgrade_costs: Dictionary = {
+	"better_oven": 300,
+	"fridge": 250,
+	"solar_panel": 400,
+	"bigger_tank": 200,
+	"stealth_paint": 500
+}
+
+## Recipe definitions
+var recipes: Dictionary = {
+	"bread": {
+		"ingredients": {"flour": 2, "water": 1},
+		"time": 5.0,
+		"base_price": 15,
+		"reputation_gain": 2
+	},
+	"cookie": {
+		"ingredients": {"flour": 1, "sugar": 1, "butter": 1},
+		"time": 3.0,
+		"base_price": 20,
+		"reputation_gain": 3
+	},
+	"cake": {
+		"ingredients": {"flour": 2, "sugar": 2, "eggs": 2, "butter": 1},
+		"time": 8.0,
+		"base_price": 50,
+		"reputation_gain": 5
+	},
+	"brownie": {
+		"ingredients": {"flour": 1, "sugar": 2, "chocolate": 1, "eggs": 1},
+		"time": 6.0,
+		"base_price": 35,
+		"reputation_gain": 4
+	},
+	"fruit_tart": {
+		"ingredients": {"flour": 1, "sugar": 1, "fruit": 2, "butter": 1},
+		"time": 7.0,
+		"base_price": 40,
+		"reputation_gain": 4
+	}
+}
+
 func _ready() -> void:
-	pass
+	_load_game()
 
 func add_money(amount: int) -> void:
 	money += amount
 	money_changed.emit(money)
+	_check_game_over()
 
 func spend_money(amount: int) -> bool:
 	if money >= amount:
@@ -71,233 +99,188 @@ func spend_money(amount: int) -> bool:
 	return false
 
 func add_reputation(amount: int) -> void:
-	reputation += amount
+	reputation = clamp(reputation + amount, 0, 100)
 	reputation_changed.emit(reputation)
 
-func add_heat(amount: int) -> void:
-	heat = clamp(heat + amount, 0, MAX_HEAT)
+func add_heat(amount: float) -> void:
+	heat = clamp(heat + amount, 0.0, max_heat)
+	heat_changed.emit(heat)
+	if heat >= max_heat:
+		game_over.emit("Police caught you! Heat reached maximum.")
+
+func next_day() -> void:
+	current_day += 1
+
+	# Daily heat decay
+	heat = max(0.0, heat - 5.0)
 	heat_changed.emit(heat)
 
-	if heat >= POLICE_CHASE_THRESHOLD and not police_alert:
-		police_alert = true
-		police_state_changed.emit(true, police_distance)
-	elif heat < POLICE_CHASE_THRESHOLD and police_alert:
-		police_alert = false
-		police_state_changed.emit(false, 0.0)
+	# RV fuel consumption per day
+	rv_fuel = max(0.0, rv_fuel - 10.0)
 
-func reduce_heat_over_time(delta: float) -> void:
-	if heat > 0:
-		heat = max(0, heat - int(delta * 2))
-		heat_changed.emit(heat)
+	# RV condition degradation
+	rv_condition = max(0.0, rv_condition - 2.0)
 
-func add_inventory(item: String, amount: int) -> void:
-	if item in inventory:
-		inventory[item] += amount
-		inventory_changed.emit()
+	day_changed.emit(current_day)
+	_save_game()
 
-func remove_inventory(item: String, amount: int) -> bool:
-	if item in inventory and inventory[item] >= amount:
-		inventory[item] -= amount
-		inventory_changed.emit()
+func can_afford_upgrade(upgrade_id: String) -> bool:
+	return money >= upgrade_costs.get(upgrade_id, 9999)
+
+func buy_upgrade(upgrade_id: String) -> bool:
+	if not upgrades.has(upgrade_id) or upgrades[upgrade_id]:
+		return false
+
+	if spend_money(upgrade_costs[upgrade_id]):
+		upgrades[upgrade_id] = true
+		_apply_upgrade(upgrade_id)
+		_save_game()
 		return true
 	return false
 
-func add_baked_good(good: String, amount: int) -> void:
-	if good in baked_goods:
-		baked_goods[good] += amount
-		baked_goods_changed.emit()
+func _apply_upgrade(upgrade_id: String) -> void:
+	match upgrade_id:
+		"better_oven":
+			for recipe in recipes.values():
+				recipe.time *= 0.7
+		"fridge":
+			# Ingredients spoil slower (handled in ingredient system)
+			pass
+		"solar_panel":
+			rv_max_fuel = 150.0
+			rv_fuel = rv_max_fuel
+		"bigger_tank":
+			rv_max_fuel = 150.0
+		"stealth_paint":
+			max_heat = 150.0
 
-func remove_baked_good(good: String, amount: int) -> bool:
-	if good in baked_goods and baked_goods[good] >= amount:
-		baked_goods[good] -= amount
-		baked_goods_changed.emit()
-		return true
-	return false
-
-func get_total_baked_goods() -> int:
-	var total = 0
-	for key in baked_goods:
-		total += baked_goods[key]
-	return total
-
-## ===== RESEP =====
-const RECIPES: Dictionary = {
-	"brownie": {
-		"name": "Brownies Gula",
-		"cost": {"sugar": 2, "flour": 1},
-		"output": 1,
-		"time": 8.0,
-		"base_price": 50,
-		"min_reputation": 0,
-		"oven_level_required": 1,
-	},
-	"karamel_layer": {
-		"name": "Lapis Karamel",
-		"cost": {"sugar": 3, "flour": 1, "honey": 1},
-		"output": 1,
-		"time": 12.0,
-		"base_price": 80,
-		"min_reputation": 10,
-		"oven_level_required": 2,
-	},
-	"dark_honey_tart": {
-		"name": "Tart Madu Gelap",
-		"cost": {"sugar": 2, "flour": 1, "honey": 2, "chocolate": 1},
-		"output": 1,
-		"time": 18.0,
-		"base_price": 130,
-		"min_reputation": 25,
-		"oven_level_required": 3,
-	},
-}
-
-func can_craft(recipe_id: String) -> bool:
-	var recipe = RECIPES[recipe_id]
+func consume_ingredients(recipe_id: String) -> bool:
+	var recipe = recipes.get(recipe_id)
 	if not recipe:
 		return false
-	if oven_level < recipe.oven_level_required:
-		return false
-	if reputation < recipe.min_reputation:
-		return false
-	for item in recipe.cost:
-		var cost = recipe.cost[item]
-		if inventory[item] < cost:
+
+	for ingredient_name, amount in recipe.ingredients:
+		if ingredients.get(ingredient_name, 0) < amount:
 			return false
+
+	for ingredient_name, amount in recipe.ingredients:
+		ingredients[ingredient_name] -= amount
+
 	return true
 
-func craft(recipe_id: String) -> bool:
-	if not can_craft(recipe_id):
-		return false
+func add_baked_good(recipe_id: String, quality: float = 1.0) -> void:
+	var current = baked_goods.get(recipe_id, 0)
+	baked_goods[recipe_id] = current + 1
 
-	var recipe = RECIPES[recipe_id]
-	for item in recipe.cost:
-		var cost = recipe.cost[item]
-		remove_inventory(item, cost)
+func sell_goods(recipe_id: String, quantity: int, price_multiplier: float = 1.0) -> int:
+	var available = baked_goods.get(recipe_id, 0)
+	var sell_amount = min(quantity, available)
 
-	# Return baking time, actual output added when timer completes
-	return true
+	if sell_amount <= 0:
+		return 0
 
-func get_recipe_output(recipe_id: String) -> int:
-	return RECIPES[recipe_id].output
+	var recipe = recipes[recipe_id]
+	var base_price = recipe.base_price
+	var earned = int(sell_amount * base_price * price_multiplier)
 
-func get_recipe_time(recipe_id: String) -> float:
-	var recipe = RECIPES[recipe_id]
-	var time = recipe.time
-	# Oven level 2 = 20% faster, level 3 = 40% faster
-	if oven_level >= 2:
-		time *= 0.8
-	if oven_level >= 3:
-		time *= 0.6
-	return time
+	baked_goods[recipe_id] -= sell_amount
+	add_money(earned)
+	add_reputation(recipe.reputation_gain * sell_amount)
 
-func get_sell_price(recipe_id: String) -> int:
-	var recipe = RECIPES[recipe_id]
-	var price = recipe.base_price
-	# Reputation bonus: +5% per 10 rep
-	price = int(price * (1.0 + reputation * 0.005))
-	return price
+	return earned
 
-## ===== UPGRADES =====
-const OVEN_UPGRADE_COST: Array[int] = [0, 300, 800]  # level 2, 3
-const ENGINE_UPGRADE_COST: Array[int] = [0, 400, 1000]
+func buy_ingredients(ingredient_list: Dictionary) -> bool:
+	var total_cost = 0
+	for ingredient, amount in ingredient_list:
+		var price = _get_ingredient_price(ingredient)
+		total_cost += price * amount
 
-func can_upgrade_oven() -> bool:
-	return oven_level < 3 and money >= OVEN_UPGRADE_COST[oven_level]
+	if spend_money(total_cost):
+		for ingredient, amount in ingredient_list:
+			ingredients[ingredient] = ingredients.get(ingredient, 0) + amount
+		return true
+	return false
 
-func upgrade_oven() -> bool:
-	if not can_upgrade_oven():
-		return false
-	spend_money(OVEN_UPGRADE_COST[oven_level])
-	oven_level += 1
-	# Unlock recipes
-	if oven_level == 2:
-		if "karamel_layer" not in unlocked_recipes:
-			unlocked_recipes.append("karamel_layer")
-	elif oven_level == 3:
-		if "dark_honey_tart" not in unlocked_recipes:
-			unlocked_recipes.append("dark_honey_tart")
-	upgrade_changed.emit()
-	return true
+func _get_ingredient_price(ingredient: String) -> int:
+	match ingredient:
+		"flour": return 5
+		"sugar": return 8
+		"butter": return 15
+		"eggs": return 10
+		"chocolate": return 25
+		"fruit": return 12
+		_: return 10
 
-func can_upgrade_engine() -> bool:
-	return engine_level < 3 and money >= ENGINE_UPGRADE_COST[engine_level]
+func drive_to_location(fuel_cost: float) -> bool:
+	if rv_fuel >= fuel_cost:
+		rv_fuel -= fuel_cost
+		return true
+	return false
 
-func upgrade_engine() -> bool:
-	if not can_upgrade_engine():
-		return false
-	spend_money(ENGINE_UPGRADE_COST[engine_level])
-	engine_level += 1
-	upgrade_changed.emit()
-	return true
+func repair_rv(amount: float = 20.0, cost: int = 100) -> bool:
+	if spend_money(cost):
+		rv_condition = min(100.0, rv_condition + amount)
+		return true
+	return false
 
-func get_max_speed() -> float:
-	# Base 15, level 2 = 20, level 3 = 28
-	var bonus = 3.0 if engine_level == 3 else 0.0
-	return 15.0 + (engine_level - 1) * 5.0 + bonus
+func refuel_rv(amount: float = 50.0, cost: int = 80) -> bool:
+	if spend_money(cost):
+		rv_fuel = min(rv_max_fuel, rv_fuel + amount)
+		return true
+	return false
 
-func get_acceleration() -> float:
-	return 8.0 + (engine_level - 1) * 3.0
+func _check_game_over() -> void:
+	if money <= 0 and _get_total_asset_value() < 100:
+		game_over.emit("Bankrupt! No money and no assets to sell.")
 
-## ===== POLICE =====
-func update_police(delta: float, rv_pos: Vector3, police_pos: Vector3) -> void:
-	if not police_alert:
-		return
+	if rv_condition <= 0:
+		game_over.emit("Your RV broke down completely!")
 
-	police_distance = rv_pos.distance_to(police_pos)
+func _get_total_asset_value() -> int:
+	var value = 0
+	for ingredient, amount in ingredients:
+		value += amount * _get_ingredient_price(ingredient)
+	for good, amount in baked_goods:
+		var recipe = recipes.get(good)
+		if recipe:
+			value += amount * recipe.base_price
+	return value
 
-	if police_distance > POLICE_LOST_DISTANCE:
-		police_lost_timer += delta
-		if police_lost_timer >= POLICE_LOST_TIME:
-			police_alert = false
-			police_lost_timer = 0.0
-			police_state_changed.emit(false, 0.0)
-	else:
-		police_lost_timer = 0.0
-
-	police_state_changed.emit(true, police_distance)
-
-func on_caught_by_police() -> void:
-	var fine = money / 2
-	money = money / 2
-	var lost_goods = get_total_baked_goods() / 2
-	for good in baked_goods:
-		baked_goods[good] = baked_goods[good] / 2
-
-	money_changed.emit(money)
-	baked_goods_changed.emit()
-	heat = 0
-	heat_changed.emit(heat)
-	police_alert = false
-	police_state_changed.emit(false, 0.0)
-
-	game_over.emit("Tertangkap polisi! Denda: $%d, Kue disita: %d" % [fine, lost_goods])
-
-## ===== SAVE/LOAD =====
-func get_save_data() -> Dictionary:
-	return {
+func _save_game() -> void:
+	var save_data = {
 		"money": money,
 		"reputation": reputation,
 		"heat": heat,
-		"inventory": inventory,
+		"current_day": current_day,
+		"rv_fuel": rv_fuel,
+		"rv_condition": rv_condition,
+		"ingredients": ingredients,
 		"baked_goods": baked_goods,
-		"oven_level": oven_level,
-		"engine_level": engine_level,
-		"unlocked_recipes": unlocked_recipes,
+		"upgrades": upgrades
 	}
 
-func load_save_data(data: Dictionary) -> void:
-	money = data.get("money", 500)
-	reputation = data.get("reputation", 0)
-	heat = data.get("heat", 0)
-	inventory = data.get("inventory", inventory)
-	baked_goods = data.get("baked_goods", baked_goods)
-	oven_level = data.get("oven_level", 1)
-	engine_level = data.get("engine_level", 1)
-	unlocked_recipes = data.get("unlocked_recipes", ["brownie"])
+	var file = FileAccess.open("user://save.json", FileAccess.WRITE)
+	if file:
+		file.store_var(save_data)
+		file.close()
 
-	money_changed.emit(money)
-	reputation_changed.emit(reputation)
-	heat_changed.emit(heat)
-	inventory_changed.emit()
-	baked_goods_changed.emit()
-	upgrade_changed.emit()
+func _load_game() -> void:
+	var file = FileAccess.open("user://save.json", FileAccess.READ)
+	if file and file.get_length() > 0:
+		var save_data = file.get_var()
+		file.close()
+
+		money = save_data.get("money", 500)
+		reputation = save_data.get("reputation", 50)
+		heat = save_data.get("heat", 0.0)
+		current_day = save_data.get("current_day", 1)
+		rv_fuel = save_data.get("rv_fuel", 100.0)
+		rv_condition = save_data.get("rv_condition", 100.0)
+		ingredients = save_data.get("ingredients", ingredients)
+		baked_goods = save_data.get("baked_goods", {})
+		upgrades = save_data.get("upgrades", upgrades)
+
+		money_changed.emit(money)
+		reputation_changed.emit(reputation)
+		heat_changed.emit(heat)
+		day_changed.emit(current_day)

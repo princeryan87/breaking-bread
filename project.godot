@@ -1,57 +1,81 @@
 [application]
 
 config/name="Breaking Bread"
-config/icon="res://assets/icon.png"
-config/features=PackedStringArray("mobile", "web")
-config/version="0.1.0"
+config/icon="assets/icon.png"
 run/main_scene="res://scenes/main.tscn"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=true
+window/mode=2
+window/vsync_mode=1
 
 [rendering]
 
 renderer/rendering_method="compatibility"
-renderer/max_time_step=0.05
+rendering/quality/shadows/shadow_atlas_size=2048
+
+[physics]
+
+common/physics_tick=60
 
 [input]
 
-move_forward={
-"deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 26), Object(InputEventKey, "physical_keycode": 82)]
-}
-move_backward={
-"deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 22), Object(InputEventKey, "physical_keycode": 81)]
-}
 move_left={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 4), Object(InputEventKey, "physical_keycode": 80)]
+"events": [
+{"type": "Key", "physical_keycode": "KeyA"},
+{"type": "Key", "physical_keycode": "ArrowLeft"},
+{"type": "JoyAxis", "axis": 0, "deadzone": 0.5}
+],
+"event_type": "Action"
 }
 move_right={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 7), Object(InputEventKey, "physical_keycode": 79)]
+"events": [
+{"type": "Key", "physical_keycode": "KeyD"},
+{"type": "Key", "physical_keycode": "ArrowRight"},
+{"type": "JoyAxis", "axis": 0, "deadzone": -0.5}
+],
+"event_type": "Action"
 }
-brake={
+move_up={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 44)]
+"events": [
+{"type": "Key", "physical_keycode": "KeyW"},
+{"type": "Key", "physical_keycode": "ArrowUp"},
+{"type": "JoyAxis", "axis": 1, "deadzone": -0.5}
+],
+"event_type": "Action"
 }
-interact_kitchen={
+move_down={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 8)]
+"events": [
+{"type": "Key", "physical_keycode": "KeyS"},
+{"type": "Key", "physical_keycode": "ArrowDown"},
+{"type": "JoyAxis", "axis": 1, "deadzone": 0.5}
+],
+"event_type": "Action"
 }
-interact_sell={
+interact={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 44)]
+"events": [
+{"type": "Key", "physical_keycode": "Space"},
+{"type": "Key", "physical_keycode": "Enter"},
+{"type": "JoyButton", "button": 0}
+],
+"event_type": "Action"
 }
-pause_menu={
+pause={
 "deadzone": 0.5,
-"events": [Object(InputEventKey, "physical_keycode": 41)]
+"events": [
+{"type": "Key", "physical_keycode": "Escape"}
+],
+"event_type": "Action"
 }
 
 [autoload]
 
-GameManager="*res://autoload/game_manager.gd"
-UIManager="*res://autoload/ui_manager.gd"
-AudioManager="*res://autoload/audio_manager.gd"
-
-[physics]
-
-common/physics_ticks_per_second=60
+GameManager="res://autoload/game_manager.gd"

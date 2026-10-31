@@ -1,86 +1,91 @@
 # Breaking Bread - Godot 4 Project
 
-Game 3D low-poly first-person tentang bisnis kue gelap di dunia di mana gula & karbohydrat ilegal.
+A mobile-friendly game about running a bakery from an RV while avoiding the police.
 
-## Struktur Proyek
+## Project Structure
+
 ```
 breaking-bread/
-├── project.godot           # Konfigurasi proyek Godot
-├── export_presets.cfg      # Preset export Web & Android
-├── .github/workflows/ci.yml # GitHub Actions build otomatis
+├── project.godot          # Project settings (Compatibility renderer)
+├── export_presets.cfg     # Web & Android export presets
+├── .github/workflows/ci.yml  # GitHub Actions CI/CD
 ├── scenes/
-│   └── main.tscn          # Scene utama (RV, kota, polisi, pelanggan)
+│   └── main.tscn          # Main scene
 ├── scripts/
-│   ├── rv_controller.gd   # Mengemudi RV, memanggang, menjual
-│   ├── city_generator.gd  # Generate kota procedural
-│   ├── police_controller.gd # AI polisi mengejar
-│   └── customer_spawner.gd # Spawn pelanggan
+│   ├── rv_controller.gd   # RV driving mechanics
+│   ├── kitchen.gd         # Baking system
+│   ├── ui_manager.gd      # UI panels & HUD
+│   ├── location_manager.gd # Location system
+│   ├── customer_spawner.gd # Customer AI
+│   ├── police.gd          # Police patrols & heat system
+│   └── world_map.gd       # World map navigation
 ├── autoload/
-│   ├── game_manager.gd    # State game (uang, resep, upgrade, panas)
-│   ├── ui_manager.gd      # HUD, panel dapur, upgrade, pesan
-│   └── audio_manager.gd   # Suara mesin, sirine, efek
+│   └── game_manager.gd    # Singleton game state
 └── assets/
-    └── icon.png           # Ikon game (placeholder)
+    └── icon.png           # App icon (placeholder)
 ```
 
-## Cara Build & Mainkan (Tanpa Install Godot di PC)
+## Quick Start
 
-### 1. Push ke GitHub
+### 1. Push to GitHub
 ```bash
 cd breaking-bread
 git init
 git add .
 git commit -m "Initial Godot project + CI"
 git branch -M main
-git remote add origin https://github.com/USERNAME/breaking-bread.git
+git remote add origin https://github.com/YOUR_USERNAME/breaking-bread.git
 git push -u origin main
 ```
-*Ganti `USERNAME` dengan username GitHub Anda.*
 
-### 2. Aktifkan GitHub Pages
-- Buka repo di GitHub → **Settings** → **Pages**
-- **Source**: pilih **GitHub Actions**
-- Save
+### 2. Enable GitHub Pages
+Go to your repo Settings → Pages → Source: "GitHub Actions"
 
-### 3. Tunggu Build Selesai
-- Buka tab **Actions** di repo GitHub
-- Tunggu workflow "Build & Deploy" selesai (biasanya 3-5 menit)
-- Build akan menghasilkan:
-  - **Web**: deploy otomatis ke GitHub Pages
-  - **APK**: download di tab Actions → artifacts → `android-apk`
+### 3. Watch the Build
+- Push to `main` triggers the workflow
+- Web build deploys to `https://YOUR_USERNAME.github.io/breaking-bread/`
+- APK downloads from Actions artifacts
 
-### 4. Mainkan di HP
-- **Web**: Buka `https://USERNAME.github.io/breaking-bread/` di browser HP
-- **APK**: Download file `breaking_bread.apk` dari artifacts Actions, install di HP
+## Game Mechanics
 
-## Kontrol Game
+- **Drive RV** → WASD/Arrows to move on map
+- **Visit Locations** → Suburbs, Downtown, Park, Market, Industrial, Supplier, Mechanic
+- **Bake Goods** → Bread, Cookies, Cakes, Brownies, Fruit Tarts
+- **Sell** → Match customer preferences for bonus prices
+- **Manage Heat** → High heat = more police patrols
+- **Upgrades** → Better oven, Fridge, Solar panel, Bigger tank, Stealth paint
 
-| Aksi | Keyboard | Layar Sentuh |
-|------|----------|--------------|
-| Maju | W / ↑ | Tombol ↑ |
-| Mundur | S / ↓ | Tombol ↓ |
-| Kiri | A / ← | Tombol ← |
-| Kanan | D / → | Tombol → |
-| Rem | Spasi | Tombol ■ |
-| Buka Dapur | E | (saat berhenti dekat RV) |
-| Jual Kue | Spasi | (saat dekat pelanggan) |
-| Pause | Esc | Tombol ☰ |
+## Controls
 
-## Mekanik Inti
-1. **Beli bahan** di panel dapur (Gula $50/5, Tepung $20/10, Madu $80/3 butuh Rep 10+, Cokelat $150/2 butuh Rep 25+)
-2. **Panggang kue** di RV (harus berhenti): Brownies, Lapis Karamel, Tart Madu Gelap
-3. **Kendarai RV** ke kota, cari pelanggan (tanda kerucut oranye)
-4. **Jual kue** → dapat uang & reputasi, tapi **Panas naik 10**
-5. **Panas > 50** → Polisi mengejar! Lari hingga jarak > 110m selama 4 detik
-6. **Tertangkap** → Denda 50% uang + 50% kue disita
-7. **Upgrade Oven** (Lv.2 $300, Lv.3 $800) → buka resep baru, panggang lebih cepat
-8. **Upgrade Mesin** (Lv.2 $400, Lv.3 $1000) → RV lebih cepat
+| Action | Keyboard | Gamepad |
+|--------|----------|---------|
+| Move | WASD / Arrows | Left Stick |
+| Interact | Space / Enter | A Button |
+| Pause | Escape | Start |
 
-## Pengembangan Lanjutan
-- Ganti aset placeholder di `assets/models/` dengan model low-poly dari [Kenney](https://kenney.nl/assets) / [Quaternius](https://quaternius.com/)
-- Tambah suara di `assets/audio/` (format .ogg/.wav)
-- Tambah kota baru di `city_generator.gd`
-- Balans ekonomi di `game_manager.gd`
+## Development
 
-## Lisensi
-Proyek pribadi - bebas dimodifikasi.
+### Local Testing (if Godot runs)
+```bash
+godot --path .
+```
+
+### Export Manually
+```bash
+# Web
+godot --headless --export-release "Web" export/web/index.html
+
+# Android
+godot --headless --export-release "Android" export/android/breaking-bread.apk
+```
+
+## Assets
+
+Replace placeholder assets in `assets/` with:
+- Kenney.nl "Tiny Town" or "Road Textures"
+- Quaternius.com low-poly food models
+- Custom pixel art for baked goods
+
+## License
+
+MIT License - Feel free to use for learning or commercial projects.

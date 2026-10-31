@@ -1,179 +1,124 @@
-extends Node3D
+extends Node2D
 
 class_name CustomerSpawner
 
-## ===== SETTINGS =====
-@export var max_customers: int = 7
-@export var spawn_radius_min: float = 30.0
-@export var spawn_radius_max: float = 150.0
-@export var respawn_time: float = 30.0
-@export var customer_prefab: PackedScene
+@export var customer_scene: PackedScene
+@export var spawn_area: Rect2 = Rect2(100, 100, 1080, 520)
 
-## ===== STATE =====
-var active_customers: Array[Node3D] = []
-var spawn_timers: Dictionary = {}
-var rng: RandomNumberGenerator
-
-## ===== MATERIALS (created in code) =====
-var customer_mat: StandardMaterial3D
-var cone_mat: StandardMaterial3D
-
-func _ready() -> void:
-	rng = RandomNumberGenerator.new()
-	rng.randomize()
-
-	# Create materials programmatically
-	customer_mat = StandardMaterial3D.new()
-	customer_mat.albedo_color = Color(1.0, 0.4, 0.4)
-	customer_mat.roughness = 0.8
-
-	cone_mat = StandardMaterial3D.new()
-	cone_mat.albedo_color = Color(1.0, 0.5, 0.0)
-	cone_mat.roughness = 0.8
-
-	# Create customer scene if not provided
-	if not customer_prefab:
-		customer_prefab = _create_customer_scene()
-
-	# Initial spawn
-	for i in range(max_customers):
-		call_deferred("_spawn_customer_delayed", i * 0.5)
-
-func _create_customer_scene() -> PackedScene:
-	var scene = PackedScene.new()
-
-	# Root
-	var root = CharacterBody3D.new()
-	root.name = "Customer"
-	root.add_to_group("customers")
-
-	# Body
-	var body = MeshInstance3D.new()
-	body.name = "Body"
-	body.mesh = CapsuleMesh.new()
-	body.mesh.height = 1.8
-	body.mesh.radius = 0.4
-	body.material_override = customer_mat
-	body.global_position = Vector3(0, 1.3, 0)
-	root.add_child(body)
-
-	# Cone indicator (above head) - use CapsuleMesh as cone substitute
-	var cone = MeshInstance3D.new()
-	cone.name = "SellIndicator"
-	cone.mesh = CapsuleMesh.new()
-	cone.mesh.height = 1.5
-	cone.mesh.radius = 0.5
-	cone.material_override = cone_mat
-	cone.global_position = Vector3(0, 3.0, 0)
-	cone.visible = false
-	root.add_child(cone)
-
-	# Collision
-	var collision = CollisionShape3D.new()
-	collision.shape = CapsuleShape3D.new()
-	collision.shape.height = 1.8
-	collision.shape.radius = 0.4
-	collision.global_position = Vector3(0, 1.3, 0)
-	root.add_child(collision)
-
-	# Script
-	var script = GDScript.new()
-	script.source_code = _get_customer_script()
-	root.script = script
-
-	scene.pack(root)
-	return scene
-
-func _get_customer_script() -> String:
-	return """
-extends CharacterBody3D
-
-var customer_id: int = 0
+var active_customers: Array[CharacterBody2D] = []
 var preferred_goods: Array[String] = []
-var patience: float = 120.0
-var sell_indicator: MeshInstance3D
-var is_waiting: bool = true
+
+signal customer_served(customer: Node, earned: int)
+signal customer_left_angry(customer: Node)
 
 func _ready() -> void:
-	sell_indicator = $SellIndicator
-	# Random preferences
-	var all_goods = ["brownie", "karamel_layer", "dark_honey_tart"]
-	preferred_goods = all_goods.duplicate()
-	preferred_goods.shuffle()
-	preferred_goods.resize(randi_range(1, 3))
+	if not customer_scene:
+		_create_default_customer_scene()
 
-func _physics_process(delta: float) -> void:
-	if is_waiting:
-		patience -= delta
-		if patience <= 0:
-			_leave()
-		# Rotate indicator
-		sell_indicator.rotation.y += delta * 2.0
+func _create_default_customer_scene() -> void:
+	# Create a simple customer scene programmatically
+	customer_scene = PackedScene.new()
+	# This would normally be a .tscn file, but we'll create basic customers in code
 
-func show_sell_indicator(show: bool) -> void:
-	sell_indicator.visible = show
+func spawn_customers(count: int, preferred: Array[String]) -> void:
+	preferred_goods = preferred
 
-func is_customer() -> bool:
-	return true
+	for i in range(count):
+		call_deferred("_spawn_single_customer")
 
-func on_purchase(good: String, price: int) -> void:
-	is_waiting = false
-	sell_indicator.visible = false
-	queue_free()
+func _spawn_single_customer() -> void:
+	var customer = CharacterBody2D.new()
+	var sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = _create_customer_sprites()
+	sprite.play("walk")
+	customer.add_child(sprite)
 
-func _leave() -> void:
-	is_waiting = false
+	var collision = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = 16
+	collision.shape = shape
+	customer.add_child(collision)
+
+	var script = GDScript.new()
+	script.source_code = """
+extends CharacterBody2D
+
+@export var move_speed := 50.0
+var target_position: Vector2
+var patience: float = 30.0
+var desired_good: String = ""
+var bought: bool = false
+
+func _ready():
+	target_position = global_position + Vector2(randi() % 200 - 100, randi() % 200 - 100)
+	patience = randf_range(20.0, 40.0)
+
+func _physics_process(delta):
+	if bought:
+		velocity = (target_position - global_position).normalized() * move_speed
+		if global_position.distance_to(target_position) < 20:
+			queue_free()
+		move_and_slide()
+		return
+
+	patience -= delta
+	if patience <= 0:
+		leave_angry()
+		return
+
+	velocity = (target_position - global_position).normalized() * move_speed
+	move_and_slide()
+
+func set_desired_good(good: String):
+	desired_good = good
+
+func try_buy(good: String, price: int) -> bool:
+	if good == desired_good and not bought:
+		bought = true
+		target_position = Vector2(1300, 360)  # Exit screen right
+		return true
+	return false
+
+func leave_angry():
+	# Signal to game manager
+	get_tree().call_group("game_manager", "on_customer_left_angry", self)
 	queue_free()
 """
+	customer.set_script(script)
 
-func _spawn_customer_delayed(delay_id: int) -> void:
-	await get_tree().create_timer(delay_id).timeout
-	_spawn_customer()
+	# Random position in spawn area
+	customer.global_position = Vector2(
+		randf_range(spawn_area.position.x, spawn_area.position.x + spawn_area.size.x),
+		randf_range(spawn_area.position.y, spawn_area.position.y + spawn_area.size.y)
+	)
 
-func _spawn_customer() -> void:
-	if active_customers.size() >= max_customers:
-		return
+	# Set desired good
+	if preferred_goods.size() > 0:
+		customer.desired_good = preferred_goods[randi() % preferred_goods.size()]
 
-	var rv = get_tree().get_first_node_in_group("rv")
-	if not rv:
-		return
-
-	# Find valid spawn position on road
-	var spawn_pos = _find_spawn_position(rv.global_position)
-	if spawn_pos == Vector3.ZERO:
-		return
-
-	var customer = customer_prefab.instantiate()
-	customer.global_position = spawn_pos
-	customer.customer_id = active_customers.size()
 	add_child(customer)
 	active_customers.append(customer)
 
-	# Connect signals
-	customer.tree_exiting.connect(_on_customer_removed.bind(customer))
+func on_customer_bought(good: String) -> void:
+	for customer in active_customers:
+		if not customer.bought and customer.desired_good == good:
+			var price = GameManager.recipes.get(good, {"base_price": 20}).base_price
+			if customer.try_buy(good, price):
+				var earned = GameManager.sell_goods(good, 1, %LocationManager.get_price_multiplier(%LocationManager.current_location, good))
+				customer_served.emit(customer, earned)
+				active_customers.erase(customer)
+				break
 
-func _find_spawn_position(rv_pos: Vector3) -> Vector3:
-	var attempts = 20
-	for i in range(attempts):
-		var angle = rng.randf_range(0, TAU)
-		var dist = rng.randf_range(spawn_radius_min, spawn_radius_max)
-		var pos = rv_pos + Vector3(cos(angle), 0, sin(angle)) * dist
+func _process(delta: float) -> void:
+	# Clean up any null references
+	for i in range(active_customers.size() - 1, -1, -1):
+		if not is_instance_valid(active_customers[i]):
+			active_customers.remove_at(i)
 
-		# Check if on road (raycast down)
-		var query = PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 10, pos - Vector3.UP * 5)
-		var result = get_world_3d().direct_space_state.intersect_ray(query)
-		if result and result.collider.is_in_group("ground"):
-			return result.position + Vector3.UP * 0.5
-
-	return Vector3.ZERO
-
-func _on_customer_removed(customer: Node3D) -> void:
-	if customer in active_customers:
-		active_customers.erase(customer)
-		# Schedule respawn
-		var timer = Timer.new()
-		timer.wait_time = respawn_time
-		timer.one_shot = true
-		timer.timeout.connect(_spawn_customer)
-		add_child(timer)
-		timer.start()
+func _create_customer_sprites() -> SpriteFrames:
+	var frames = SpriteFrames.new()
+	frames.add_animation("walk")
+	frames.add_animation("idle")
+	frames.add_animation("happy")
+	# In a real project, you'd load actual textures here
+	return frames

@@ -1,0 +1,35 @@
+# Godot 4
+.import/
+export/
+*.translation
+*.cfg
+*.pid
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+export/web/
+export/android/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+godot.log
+
+# User data
+user://*
+
+# Temporary files
+*.tmp
+*.temp

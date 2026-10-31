@@ -1,134 +1,31 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=8 format=3 uid://bk8q9j2m3n4o5]
 
-[ext_resource type="Script" path="res://scripts/rv_controller.gd" id="1_0"]
-[ext_resource type="Script" path="res://scripts/city_generator.gd" id="2_0"]
-[ext_resource type="Script" path="res://scripts/police_controller.gd" id="3_0"]
-[ext_resource type="Script" path="res://scripts/customer_spawner.gd" id="4_0"]
+[ext_resource type="Script" path="res://scripts/rv_controller.gd" id="1_7w0z9"]
+[ext_resource type="Script" path="res://scripts/kitchen.gd" id="2_8x1a0"]
+[ext_resource type="Script" path="res://scripts/ui_manager.gd" id="3_9y2b1"]
+[ext_resource type="Script" path="res://scripts/location_manager.gd" id="4_0z3c2"]
+[ext_resource type="Script" path="res://scripts/customer_spawner.gd" id="5_1a4d3"]
+[ext_resource type="Script" path="res://scripts/police.gd" id="6_2b5e4"]
+[ext_resource type="Script" path="res://scripts/world_map.gd" id="7_3c6f5"]
 
-[sub_resource type="StandardMaterial3D" id="Material_road"]
-albedo_color = Color(0.2, 0.2, 0.2)
-roughness = 0.9
+[node name="Main" type="Node2D"]
+main_loop_callback = &"process"
 
-[sub_resource type="StandardMaterial3D" id="Material_building"]
-albedo_color = Color(0.6, 0.55, 0.5)
-roughness = 0.8
+[node name="WorldMap" type="Node2D" parent="." instance=ExtResource("7_3c6f5")]
 
-[sub_resource type="StandardMaterial3D" id="Material_ground"]
-albedo_color = Color(0.35, 0.4, 0.3)
-roughness = 0.9
+[node name="RV" type="CharacterBody2D" parent="." instance=ExtResource("1_7w0z9")]
+position = Vector2(640, 360)
 
-[sub_resource type="StandardMaterial3D" id="Material_rv_body"]
-albedo_color = Color(0.8, 0.75, 0.65)
-roughness = 0.7
+[node name="Kitchen" type="Node2D" parent="." instance=ExtResource("2_8x1a0")]
+position = Vector2(100, 100)
+visible = false
 
-[sub_resource type="StandardMaterial3D" id="Material_window"]
-albedo_color = Color(0.2, 0.3, 0.5)
-roughness = 0.1
-transparency = 1
-transparency_mode = 1
+[node name="LocationManager" type="Node2D" parent="." instance=ExtResource("4_0z3c2")]
 
-[sub_resource type="StandardMaterial3D" id="Material_police"]
-albedo_color = Color(0.1, 0.1, 0.6)
-roughness = 0.7
+[node name="CustomerSpawner" type="Node2D" parent="." instance=ExtResource("5_1a4d3")]
 
-[sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(1000, 1, 1000)
+[node name="Police" type="Node2D" parent="." instance=ExtResource("6_2b5e4")]
 
-[sub_resource type="BoxShape3D" id="RVShape"]
-size = Vector3(2.5, 2.0, 5.0)
+[node name="UIManager" type="CanvasLayer" parent="." instance=ExtResource("3_9y2b1")]
 
-[sub_resource type="BoxShape3D" id="KitchenAreaShape"]
-size = Vector3(2.0, 1.5, 2.0)
-
-[sub_resource type="BoxShape3D" id="SellAreaShape"]
-size = Vector3(1.0, 1.5, 1.5)
-
-[sub_resource type="BoxShape3D" id="PoliceShape"]
-size = Vector3(2.0, 1.5, 4.0)
-
-[node name="Main" type="Node3D" groups=["main"]]
-physics_ticks_per_second = 60
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
-light_color = Color(1, 0.95, 0.8)
-light_energy = 1.5
-light_size = 0.5
-shadow_enabled = true
-light_projector = 1
-
-[node name="Ground" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
-shape = SubResource("GroundShape")
-
-[node name="CityGenerator" type="Node3D" parent="." script=ExtResource("2_0")]
-
-[node name="RV" type="CharacterBody3D" parent="." script=ExtResource("1_0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
-groups = ["rv"]
-
-[node name="RVBody" type="MeshInstance3D" parent="RV"]
-mesh = BoxMesh(size = Vector3(2.5, 2.0, 5.0))
-material_override = SubResource("Material_rv_body")
-
-[node name="RVRoof" type="MeshInstance3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.5)
-mesh = BoxMesh(size = Vector3(2.3, 0.8, 3.5))
-material_override = SubResource("Material_rv_body")
-
-[node name="RVWindow_Front" type="MeshInstance3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 2.0)
-mesh = BoxMesh(size = Vector3(2.0, 1.2, 0.1))
-material_override = SubResource("Material_window")
-
-[node name="RVWindow_Left" type="MeshInstance3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 1.2, -0.5)
-mesh = BoxMesh(size = Vector3(0.1, 1.2, 2.5))
-material_override = SubResource("Material_window")
-
-[node name="RVWindow_Right" type="MeshInstance3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 1.2, -0.5)
-mesh = BoxMesh(size = Vector3(0.1, 1.2, 2.5))
-material_override = SubResource("Material_window")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RV"]
-shape = SubResource("RVShape")
-
-[node name="Camera3D" type="Camera3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 1.0)
-fov = 80
-near = 0.1
-
-[node name="KitchenArea" type="Area3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1.5)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RV/KitchenArea"]
-shape = SubResource("KitchenAreaShape")
-
-[node name="SellArea" type="Area3D" parent="RV"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.5, 0.0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="RV/SellArea"]
-shape = SubResource("SellAreaShape")
-
-[node name="PoliceController" type="CharacterBody3D" parent="." script=ExtResource("3_0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 1, -50)
-groups = ["police"]
-
-[node name="PoliceBody" type="MeshInstance3D" parent="PoliceController"]
-mesh = BoxMesh(size = Vector3(2.0, 1.5, 4.0))
-material_override = SubResource("Material_police")
-
-[node name="PoliceLight" type="OmniLight3D" parent="PoliceController"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
-light_color = Color(0.2, 0.2, 1.0)
-light_energy = 5.0
-omni_range = 20.0
-omni_attenuation = 1.0
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PoliceController"]
-shape = SubResource("PoliceShape")
-
-[node name="CustomerSpawner" type="Node3D" parent="." script=ExtResource("4_0")]
+[node name="GameManager" type="Node" parent="." instance=ExtResource("res://autoload/game_manager.gd")]

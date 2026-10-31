@@ -3,6 +3,8 @@ name: Build & Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,105 +13,94 @@ permissions:
   id-token: write
 
 env:
-  GODOT_VERSION: "4.3"
-  PROJECT_PATH: "."
+  GODOT_VERSION: 4.3
+  PROJECT_PATH: .
 
 jobs:
   build-web:
-    name: Export Web (HTML5)
+    name: Build Web (HTML5)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      web_artifact: ${{ steps.upload-web.outputs.artifact_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Godot
-        run: |
-          # Download Godot 4.3 Linux headless
-          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
-          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
-
-          mkdir -p ~/.local/share/godot
-          cd ~/.local/share/godot
-
-          # Download Godot
-          wget -nv -O godot.zip "$GODOT_URL"
-          unzip -q godot.zip
-          mv Godot_v4.3-stable_linux.x86_64 godot
-          chmod +x godot
-
-          # Download export templates
-          wget -nv -O templates.tpz "$TEMPLATES_URL"
-          unzip -q templates.tpz
-          # Godot expects templates at ~/.local/share/godot/export_templates/<version>/
-          mkdir -p export_templates/4.3.stable
-          mv templates/* export_templates/4.3.stable/ 2>/dev/null || true
-
-          echo "~/.local/share/godot" >> $GITHUB_PATH
-
-      - name: Export Web
-        run: |
-          mkdir -v -p web
-          godot --headless --export-release "Web" web/index.html
-
-      - name: Upload Web artifact for Pages
-        id: upload-web
-        uses: actions/upload-pages-artifact@v3
+        uses: firebelley/setup-godot@v2
         with:
-          path: web/
-          name: github-pages
+          version: ${{ env.GODOT_VERSION }}
+          export_templates: true
+
+      - name: Build Web Export
+        run: |
+          mkdir -v -p export/web
+          godot --headless --export-release "Web" export/web/index.html
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: export/web/
+          retention-days: 7
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: export/web
+          force_orphan: true
 
   build-android:
-    name: Export Android (APK)
+    name: Build Android (APK)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Godot
+        uses: firebelley/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          export_templates: true
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          ndk-version: r26c
+          emulator: false
+
+      - name: Accept Android Licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Build Android Export
         run: |
-          # Download Godot 4.3 Linux headless
-          GODOT_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
-          TEMPLATES_URL="https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+          mkdir -v -p export/android
+          godot --headless --export-release "Android" export/android/breaking-bread.apk
 
-          mkdir -p ~/.local/share/godot
-          cd ~/.local/share/godot
-
-          # Download Godot
-          wget -nv -O godot.zip "$GODOT_URL"
-          unzip -q godot.zip
-          mv Godot_v4.3-stable_linux.x86_64 godot
-          chmod +x godot
-
-          # Download export templates
-          wget -nv -O templates.tpz "$TEMPLATES_URL"
-          unzip -q templates.tpz
-          # Godot expects templates at ~/.local/share/godot/export_templates/<version>/
-          mkdir -p export_templates/4.3.stable
-          mv templates/* export_templates/4.3.stable/ 2>/dev/null || true
-
-          echo "~/.local/share/godot" >> $GITHUB_PATH
-
-      - name: Export Android (debug keystore)
-        run: |
-          mkdir -v -p builds
-          godot --headless --export-release "Android" builds/breaking_bread.apk
-
-      - name: Upload APK artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: builds/breaking_bread.apk
+          path: export/android/breaking-bread.apk
           retention-days: 30
 
-  deploy-pages:
-    name: Deploy to GitHub Pages
-    needs: build-web
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: firebelley/setup-godot@v2
+        with:
+          version: ${{ env.GODOT_VERSION }}
+
+      - name: Run GUT Tests
+        run: |
+          godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests --no-rendering-loop
+        continue-on-error: true
